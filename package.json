@@ -1,0 +1,17 @@
+{
+  "name": "local-r2-drive",
+  "version": "1.0.0",
+  "description": "Secure localhost-based React + Node.js application for managing Cloudflare R2 buckets",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=frontend\" \"npm run dev --workspace=backend\"",
+    "install:all": "npm install && npm install --workspace=frontend && npm install --workspace=backend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

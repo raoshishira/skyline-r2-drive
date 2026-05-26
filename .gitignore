@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+dist/
+build/
+.DS_Store
+
+# Environment & Secrets
+.env
+.env.local
+.auth.json
+.app-config.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# Vite / Frontend
+dist/
+*.local
+
+# Typescript
+*.tsbuildinfo
+
