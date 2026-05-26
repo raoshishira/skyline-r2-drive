@@ -70,7 +70,7 @@ npm run install:all
 npm run dev
 ```
 1. Access the application at [http://localhost:5173](http://localhost:5173).
-2. Login with the default password: `password123` (unless you changed it in your `.env`).
+2. Follow the on-screen instructions to set your local password for the first time.
 
 ## ?? Architecture
 

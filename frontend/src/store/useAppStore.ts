@@ -2,9 +2,11 @@ import { create } from "zustand";
 
 interface AppState {
   isAuthenticated: boolean;
+  needsSetup: boolean;
   currentBucket: string | null;
   currentPrefix: string;
   setAuthenticated: (val: boolean) => void;
+  setNeedsSetup: (val: boolean) => void;
   setCurrentBucket: (bucket: string | null) => void;
   setCurrentPrefix: (prefix: string) => void;
   navigateUp: () => void;
@@ -13,9 +15,11 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set) => ({
   isAuthenticated: false,
+  needsSetup: false,
   currentBucket: null,
   currentPrefix: "",
   setAuthenticated: (val) => set({ isAuthenticated: val }),
+  setNeedsSetup: (val) => set({ needsSetup: val }),
   setCurrentBucket: (bucket) => set({ currentBucket: bucket, currentPrefix: "" }),
   setCurrentPrefix: (prefix) => set({ currentPrefix: prefix }),
   navigateUp: () => set((state) => {

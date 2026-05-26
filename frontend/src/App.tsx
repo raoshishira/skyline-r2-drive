@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAppStore } from "./store/useAppStore";
 import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { SetupPage } from "./pages/SetupPage";
 import { TransferManager } from "./components/TransferManager";
 import client from "./api/client";
 
@@ -16,7 +17,7 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-  const { isAuthenticated, setAuthenticated } = useAppStore();
+  const { isAuthenticated, setAuthenticated, needsSetup, setNeedsSetup } = useAppStore();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -25,17 +26,26 @@ function App() {
         if (res.data.authenticated) {
           setAuthenticated(true);
         }
+        if (res.data.needsSetup) {
+          setNeedsSetup(true);
+        }
       } catch (err) {
         console.error("Auth check failed", err);
       }
     };
     checkAuth();
-  }, [setAuthenticated]);
+  }, [setAuthenticated, setNeedsSetup]);
 
   return (
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans">
-        {!isAuthenticated ? <LoginPage /> : <DashboardPage />}
+        {needsSetup ? (
+          <SetupPage />
+        ) : !isAuthenticated ? (
+          <LoginPage />
+        ) : (
+          <DashboardPage />
+        )}
         <TransferManager />
       </div>
     </QueryClientProvider>
