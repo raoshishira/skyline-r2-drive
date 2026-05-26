@@ -2,12 +2,23 @@ import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import client from "../api/client";
 import { useAppStore } from "../store/useAppStore";
-import { Folder, File, ChevronRight, ArrowLeft, Loader2, Download, Trash2, Database } from "lucide-react";
+import { Folder, File, ChevronRight, ArrowLeft, Loader2, Download, Trash2, Database, Share2 } from "lucide-react";
 import { Button } from "./ui/Button";
 
 export const FileBrowser = () => {
   const { currentBucket, currentPrefix, navigateUp, navigateInto } = useAppStore();
   const queryClient = useQueryClient();
+
+  const handleShare = async (key: string) => {
+    try {
+      const res = await client.get(`/r2/signed-url?bucket=${currentBucket}&key=${encodeURIComponent(key)}`);
+      await navigator.clipboard.writeText(res.data.url);
+      alert("Signed URL copied to clipboard! (Expires in 1 hour)");
+    } catch (err) {
+      console.error("Failed to generate signed URL", err);
+      alert("Failed to generate share link");
+    }
+  };
 
   const { data: items, isLoading } = useQuery({
     queryKey: ["objects", currentBucket, currentPrefix],
@@ -34,6 +45,11 @@ export const FileBrowser = () => {
 
   const downloadFolder = (prefix: string) => {
     window.open(`http://localhost:3001/api/r2/download/folder?bucket=${currentBucket}&prefix=${encodeURIComponent(prefix)}`, "_blank");
+  };
+
+  const isImage = (fileName: string) => {
+    const ext = fileName.split(".").pop()?.toLowerCase();
+    return ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext || "");
   };
 
   if (!currentBucket) {
@@ -107,7 +123,21 @@ export const FileBrowser = () => {
                         </button>
                       ) : (
                         <>
-                          <File className="h-4 w-4 text-gray-400" />
+                          {isImage(item.key) ? (
+                            <div className="h-8 w-8 rounded bg-gray-100 dark:bg-gray-800 overflow-hidden flex-shrink-0 border dark:border-gray-700">
+                              <img 
+                                src={`http://localhost:3001/api/r2/thumbnail?bucket=${currentBucket}&key=${encodeURIComponent(item.key)}`} 
+                                alt=""
+                                className="h-full w-full object-cover"
+                                onError={(e) => {
+                                  (e.target as any).src = ""; // Clear src to trigger fallback or just hide
+                                  (e.target as any).style.display = "none";
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <File className="h-4 w-4 text-gray-400" />
+                          )}
                           <span>{item.key.replace(currentPrefix, "")}</span>
                         </>
                       )}
@@ -121,6 +151,11 @@ export const FileBrowser = () => {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {item.type === "file" && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" onClick={() => handleShare(item.key)}>
+                          <Share2 className="h-4 w-4" />
+                        </Button>
+                      )}
                       {item.type === "file" ? (
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => downloadFile(item.key)}>
                           <Download className="h-4 w-4" />

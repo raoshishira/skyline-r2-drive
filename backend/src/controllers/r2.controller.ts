@@ -8,7 +8,9 @@
   } = require("@aws-sdk/client-s3");
   const { Upload } = require("@aws-sdk/lib-storage");
   const { s3Client } = require("../services/r2.service");
+  const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
   const archiver = require("archiver");
+  const sharp = require("sharp");
   const { Readable } = require("stream");
   const path = require("path");
 
@@ -67,12 +69,12 @@
   };
 
   const uploadFile = async (req: any, res: any) => {
-    const { bucket, prefix } = req.body;
+    const { bucket, prefix, key: customKey } = req.body;
     const file = req.file;
 
     if (!bucket || !file) return res.status(400).json({ error: "Bucket and File are required" });
 
-    const key = prefix ? `${prefix}${file.originalname}` : file.originalname;
+    const key = customKey || (prefix ? `${prefix}${file.originalname}` : file.originalname);
 
     try {
       const parallelUploads3 = new Upload({
@@ -185,5 +187,39 @@
     res.json({ success: true });
   };
 
-  module.exports = { getConfig, updateConfig, listBuckets, listObjects, deleteObject, moveObject, uploadFile, downloadFile, downloadFolder };
+  const generateSignedUrl = async (req: any, res: any) => {
+    const { bucket, key, expires } = req.query;
+    if (!bucket || !key) return res.status(400).json({ error: "Bucket and Key are required" });
+
+    try {
+      const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+      const url = await getSignedUrl(s3Client, command, { expiresIn: parseInt(expires) || 3600 });
+      res.json({ url });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  };
+
+  const getThumbnail = async (req: any, res: any) => {
+    const { bucket, key } = req.query;
+    if (!bucket || !key) return res.status(400).json({ error: "Bucket and Key are required" });
+
+    try {
+      const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+      const response = await s3Client.send(command);
+
+      if (response.Body instanceof Readable) {
+        res.setHeader("Content-Type", "image/jpeg");
+        response.Body
+          .pipe(sharp().resize(100, 100, { fit: "cover" }).jpeg())
+          .pipe(res);
+      } else {
+        res.status(500).json({ error: "Failed to get image stream" });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  };
+
+  module.exports = { getThumbnail, generateSignedUrl, getConfig, updateConfig, listBuckets, listObjects, deleteObject, moveObject, uploadFile, downloadFile, downloadFolder };
 }

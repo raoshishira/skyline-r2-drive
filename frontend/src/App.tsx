@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAppStore } from "./store/useAppStore";
 import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { TransferManager } from "./components/TransferManager";
 import client from "./api/client";
 
 const queryClient = new QueryClient({
@@ -35,6 +36,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans">
         {!isAuthenticated ? <LoginPage /> : <DashboardPage />}
+        <TransferManager />
       </div>
     </QueryClientProvider>
   );
