@@ -1,6 +1,12 @@
 # 🌌 Skyline R2 Drive
 
+[![GitHub stars](https://img.shields.io/github/stars/raoshishira/skyline-r2-drive?style=social)](https://github.com/raoshishira/skyline-r2-drive)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 **Skyline R2 Drive** is a secure, high-performance, localhost-based file manager for Cloudflare R2. It provides a familiar "Google Drive-like" interface for your R2 buckets while keeping your API keys and data strictly under your local control.
+
+> [!TIP]
+> **Enjoying the project?** Give it a ⭐ on GitHub to show your support!
 
 ## 🚀 Features
 
