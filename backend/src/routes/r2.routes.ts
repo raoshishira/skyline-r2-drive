@@ -3,8 +3,9 @@
   const r2Controller = require("../controllers/r2.controller");
   const { isAuthenticated } = require("../middleware/auth");
   const multer = require("multer");
+  const os = require("os");
   const router = Router();
-  const upload = multer({ storage: multer.memoryStorage() });
+  const upload = multer({ dest: os.tmpdir() });
   router.get("/buckets", isAuthenticated, r2Controller.listBuckets);
   router.get("/config", isAuthenticated, r2Controller.getConfig);
   router.post("/config", isAuthenticated, r2Controller.updateConfig);

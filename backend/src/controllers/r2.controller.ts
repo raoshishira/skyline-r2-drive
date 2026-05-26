@@ -1,13 +1,13 @@
 {
-  const { 
-    ListBucketsCommand, 
-    ListObjectsV2Command, 
+  const {
+    ListBucketsCommand,
+    ListObjectsV2Command,
     DeleteObjectCommand,
     CopyObjectCommand,
     GetObjectCommand
   } = require("@aws-sdk/client-s3");
   const { Upload } = require("@aws-sdk/lib-storage");
-  const { s3Client } = require("../services/r2.service");
+  const { s3Client, getS3Client } = require("../services/r2.service");
   const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
   const archiver = require("archiver");
   const sharp = require("sharp");
@@ -20,6 +20,7 @@
       const { Buckets } = await s3Client.send(command);
       res.json(Buckets || []);
     } catch (error: any) {
+      console.error("R2 ListBuckets Error:", error);
       res.status(500).json({ error: error.message });
     }
   };
@@ -41,6 +42,7 @@
         .map((item: any) => ({ key: item.Key, size: item.Size, lastModified: item.LastModified, type: "file" }));
       res.json([...folders, ...files]);
     } catch (error: any) {
+      console.error("R2 ListObjects Error:", error);
       res.status(500).json({ error: error.message });
     }
   };
@@ -64,6 +66,7 @@
       await s3Client.send(new DeleteObjectCommand({ Bucket: bucket, Key: sourceKey }));
       res.json({ success: true });
     } catch (error: any) {
+      console.error("R2 MoveObject Error:", error);
       res.status(500).json({ error: error.message });
     }
   };
@@ -77,12 +80,13 @@
     const key = customKey || (prefix ? `${prefix}${file.originalname}` : file.originalname);
 
     try {
+      const realClient = getS3Client();
       const parallelUploads3 = new Upload({
-        client: s3Client,
+        client: realClient,
         params: {
           Bucket: bucket,
           Key: key,
-          Body: file.buffer,
+          Body: fs.createReadStream(file.path),
           ContentType: file.mimetype,
         },
       });
@@ -90,7 +94,12 @@
       await parallelUploads3.done();
       res.json({ success: true, key });
     } catch (error: any) {
+      console.error("R2 Upload Error:", error);
       res.status(500).json({ error: error.message });
+    } finally {
+      if (file.path && fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+      }
     }
   };
 
@@ -101,7 +110,7 @@
     try {
       const command = new GetObjectCommand({ Bucket: bucket, Key: key });
       const response = await s3Client.send(command);
-      
+
       res.setHeader("Content-Disposition", `attachment; filename="${path.basename(key)}"`);
       res.setHeader("Content-Type", response.ContentType || "application/octet-stream");
 
@@ -162,14 +171,14 @@
   const updateConfig = async (req: any, res: any) => {
     const { endpoint, accessKeyId, secretAccessKey, bucket } = req.body;
     const envPath = path.join(__dirname, "../../../.env");
-    
+
     let envContent = "";
     if (fs.existsSync(envPath)) {
       envContent = fs.readFileSync(envPath, "utf8");
     }
 
     const envVars = dotenv.parse(envContent);
-    
+
     if (endpoint) envVars.R2_ENDPOINT = endpoint;
     if (accessKeyId) envVars.R2_ACCESS_KEY_ID = accessKeyId;
     if (secretAccessKey && secretAccessKey !== "****") envVars.R2_SECRET_ACCESS_KEY = secretAccessKey;
@@ -180,10 +189,10 @@
       .join("\n");
 
     fs.writeFileSync(envPath, newContent);
-    
+
     // Reload env vars for current process
     dotenv.config({ path: envPath, override: true });
-    
+
     res.json({ success: true });
   };
 

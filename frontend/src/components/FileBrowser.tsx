@@ -39,12 +39,42 @@ export const FileBrowser = () => {
     },
   });
 
+  const moveMutation = useMutation({
+    mutationFn: async ({ sourceKey, destinationKey }: { sourceKey: string; destinationKey: string }) => {
+      await client.patch("/r2/move", {
+        bucket: currentBucket,
+        sourceKey,
+        destinationKey
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["objects", currentBucket, currentPrefix] });
+    },
+  });
+
+  const handleDragStart = (e: React.DragEvent, key: string) => {
+    e.dataTransfer.setData("sourceKey", key);
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetPrefix: string) => {
+    e.preventDefault();
+    const sourceKey = e.dataTransfer.getData("sourceKey");
+    if (!sourceKey || sourceKey === targetPrefix) return;
+
+    const fileName = sourceKey.split("/").pop();
+    const destinationKey = `${targetPrefix}${fileName}`;
+
+    if (sourceKey === destinationKey) return;
+
+    moveMutation.mutate({ sourceKey, destinationKey });
+  };
+
   const downloadFile = (key: string) => {
-    window.open(`http://localhost:3001/api/r2/download?bucket=${currentBucket}&key=${encodeURIComponent(key)}`, "_blank");
+    window.open(`http://localhost:3002/api/r2/download?bucket=${currentBucket}&key=${encodeURIComponent(key)}`, "_blank");
   };
 
   const downloadFolder = (prefix: string) => {
-    window.open(`http://localhost:3001/api/r2/download/folder?bucket=${currentBucket}&prefix=${encodeURIComponent(prefix)}`, "_blank");
+    window.open(`http://localhost:3002/api/r2/download/folder?bucket=${currentBucket}&prefix=${encodeURIComponent(prefix)}`, "_blank");
   };
 
   const isImage = (fileName: string) => {
@@ -79,9 +109,9 @@ export const FileBrowser = () => {
           ))}
         </div>
         <div className="flex gap-2">
-           <Button size="sm" onClick={() => downloadFolder(currentPrefix)} disabled={!currentPrefix}>
-             Download Folder (.zip)
-           </Button>
+          <Button size="sm" onClick={() => downloadFolder(currentPrefix)} disabled={!currentPrefix}>
+            Download Folder (.zip)
+          </Button>
         </div>
       </div>
 
@@ -110,11 +140,19 @@ export const FileBrowser = () => {
               </tr>
             ) : (
               items?.map((item: any) => (
-                <tr key={item.key} className="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors group">
+                <tr
+                  key={item.key}
+                  draggable={item.type === "file"}
+                  onDragStart={(e) => handleDragStart(e, item.key)}
+                  onDragOver={item.type === "folder" ? (e) => e.preventDefault() : undefined}
+                  onDrop={item.type === "folder" ? (e) => handleDrop(e, item.key) : undefined}
+                  className={`hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors group ${item.type === "folder" ? "cursor-default" : "cursor-move"
+                    } ${moveMutation.isPending ? "opacity-50 pointer-events-none" : ""}`}
+                >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       {item.type === "folder" ? (
-                        <button 
+                        <button
                           onClick={() => navigateInto(item.key.substring(currentPrefix.length))}
                           className="flex items-center gap-3 text-blue-600 hover:underline dark:text-blue-400"
                         >
@@ -124,9 +162,9 @@ export const FileBrowser = () => {
                       ) : (
                         <>
                           {isImage(item.key) ? (
-                            <div className="h-8 w-8 rounded bg-gray-100 dark:bg-gray-800 overflow-hidden flex-shrink-0 border dark:border-gray-700">
-                              <img 
-                                src={`http://localhost:3001/api/r2/thumbnail?bucket=${currentBucket}&key=${encodeURIComponent(item.key)}`} 
+                            <div className="h-8 w-8 rounded bg-gray-100 dark:bg-gray-800 overflow-hidden shrink-0 border dark:border-gray-700">
+                              <img
+                                src={`http://localhost:3002/api/r2/thumbnail?bucket=${currentBucket}&key=${encodeURIComponent(item.key)}`}
                                 alt=""
                                 className="h-full w-full object-cover"
                                 onError={(e) => {
@@ -165,9 +203,9 @@ export const FileBrowser = () => {
                           <Download className="h-4 w-4" />
                         </Button>
                       )}
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="h-8 w-8 text-red-600 hover:text-red-700"
                         onClick={() => deleteMutation.mutate(item.key)}
                       >

@@ -14,6 +14,7 @@ interface TransferState {
   updateProgress: (id: string, progress: number) => void;
   updateStatus: (id: string, status: Transfer["status"], error?: string) => void;
   clearCompleted: () => void;
+  clearAll: () => void;
 }
 
 export const useTransferStore = create<TransferState>((set) => ({
@@ -30,4 +31,5 @@ export const useTransferStore = create<TransferState>((set) => ({
   clearCompleted: () => set((state) => ({
     transfers: state.transfers.filter((t) => t.status === "uploading")
   })),
+  clearAll: () => set({ transfers: [] }),
 }));
