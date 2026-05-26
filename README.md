@@ -69,7 +69,8 @@ npm run install:all
 ```bash
 npm run dev
 ```
-Access the application at [http://localhost:5173](http://localhost:5173).
+1. Access the application at [http://localhost:5173](http://localhost:5173).
+2. Login with the default password: `password123` (unless you changed it in your `.env`).
 
 ## ?? Architecture
 
