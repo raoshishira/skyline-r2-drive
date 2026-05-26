@@ -22,7 +22,7 @@
   - Recursive folder downloads: Auto-zips entire directories on-the-fly.
 - 🔒 **Security First**:
   - **Local-Only Design**: Built specifically to run on `localhost`.
-  - **Zero Key Exposure**: R2 credentials stay on the backend and are never sent to the browser.
+  - **Backend-Only Storage**: R2 credentials are saved to a local `.env` file. While they pass through the browser during initial configuration, they are never stored in LocalStorage or used for client-side SDK calls.
   - **Password Protection**: Local login required to access the dashboard.
   - **Security Headers**: Powered by Helmet.js and CSRF protection.
 - ?? **Modern UI/UX**:
